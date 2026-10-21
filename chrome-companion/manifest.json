@@ -1,0 +1,59 @@
+{
+  "manifest_version": 3,
+  "name": "DAILY SCROLL — Your social apps",
+  "version": "0.2.1",
+  "description": "The actual social websites in Daily Scroll windows, sharing one daily allowance.",
+  "minimum_chrome_version": "120",
+  "permissions": [
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://m.youtube.com/*",
+    "https://www.instagram.com/*",
+    "https://www.tiktok.com/*",
+    "https://www.facebook.com/*",
+    "https://m.facebook.com/*",
+    "https://www.twitch.tv/*",
+    "https://www.snapchat.com/*",
+    "https://web.snapchat.com/*",
+    "http://localhost:8787/*"
+  ],
+  "background": {
+    "service_worker": "background.mjs",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Open DAILY SCROLL"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:8787/*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://m.youtube.com/*",
+        "https://www.instagram.com/*",
+        "https://www.tiktok.com/*",
+        "https://www.facebook.com/*",
+        "https://m.facebook.com/*",
+        "https://www.twitch.tv/*",
+        "https://www.snapchat.com/*",
+        "https://web.snapchat.com/*"
+      ],
+      "js": [
+        "timer.js",
+        "social.js"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}
