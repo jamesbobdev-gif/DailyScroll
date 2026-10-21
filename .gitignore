@@ -1,0 +1,12 @@
+node_modules/
+data/
+.expo/
+.env*
+!.env.example
+dist/
+desktop/runtime/
+web/chrome-companion.zip
+*.log
+*.tsbuildinfo
+.DS_Store
+Thumbs.db

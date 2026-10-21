@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "The Daily Scroll",
+    "slug": "the-daily-scroll",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.thedailyscroll.mobile"
+    },
+    "android": {
+      "package": "app.thedailyscroll.mobile"
+    },
+    "scheme": "dailyscroll",
+    "plugins": [
+      "expo-web-browser"
+    ]
+  }
+}
