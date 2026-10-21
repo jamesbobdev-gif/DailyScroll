@@ -1,0 +1,7 @@
+const timer=document.getElementById('timer');let state=null,stamp=0,shown=0;
+function render(value){state=value;stamp=performance.now();document.getElementById('host').textContent=value.error||value.host||(value.loading?'Opening…':'Your scroll, in one place.');document.getElementById('welcome').hidden=!!value.platform;document.getElementById('stop').hidden=!value.platform;document.getElementById('stop').textContent='Exit '+(value.platform||'app');document.getElementById('notice').textContent=value.error||'';for(const button of document.querySelectorAll('[data-platform]'))button.classList.toggle('selected',button.dataset.platform===value.platform);tick();}
+function tick(){if(!state?.budget)return;const elapsed=state.platform?Math.max(0,performance.now()-stamp):0;shown=Math.max(shown,state.budget.elapsed+elapsed);const seconds=Math.floor(shown/1000);timer.textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0')+' elapsed';}
+async function run(action){try{await action();}catch(error){document.getElementById('notice').textContent=error.message;}}
+for(const button of document.querySelectorAll('[data-platform]'))button.onclick=()=>run(()=>window.dailyScroll.open(button.dataset.platform));
+for(const button of document.querySelectorAll('[data-nav]'))button.onclick=()=>run(()=>window.dailyScroll.navigate(button.dataset.nav));
+window.dailyScroll.onStatus(render);window.dailyScroll.status().then(render);setInterval(tick,250);
