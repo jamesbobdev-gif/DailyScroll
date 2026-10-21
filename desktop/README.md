@@ -1,0 +1,17 @@
+# Daily Scroll desktop 0.3
+
+Windows installer: dist/Daily-Scroll-Setup-0.3.0.exe. The unpacked development app is dist/win-unpacked/Daily Scroll.exe. This build is unsigned and has not been published to an app store.
+
+The application hosts a sandboxed Electron WebContentsView inside its own window. The app's sidebar, navigation and elapsed timer remain outside the browsing pane. Social sites load as top-level documents in that pane, not cross-origin iframes. No Chrome companion, separate Chrome window, or localhost server setup is required. The application starts its own service on an ephemeral loopback port.
+
+The social browsing partition is persistent and separate from Chrome. Sign in separately on each official site. Google and other providers may restrict embedded browser sign-in; account acceptance and native mobile features are not guaranteed. No credentials or account cookies are extracted from Chrome, and no user-agent impersonation or browser-security overrides are used. Account content, private browsing data and remote cookies stay in the local browser partition. The budget ledger is stored in the app's user-data directory.
+
+Testing mode is enabled: the timer counts elapsed active browsing, with no schedule or one-hour blocking. The backend persists testing time across renewals, switching platforms and application restarts. Existing normal allowance usage is preserved. Audio is enabled; each site’s player controls its sound. Requests for notifications, microphone and camera are denied in this first browsing build. Unsupported navigation and new windows are blocked; supported platform/login links stay in the browsing pane. Browsing can pause if the internal service stops responding.
+
+Build locally: npm ci, then npm run build. The prepare step copies the shared service modules into runtime. npm start launches the development app. npm run build creates an NSIS installer and an unpacked Windows application. The Electron and builder versions are pinned in package-lock.json.
+
+Verification: the packaged Windows application was launched through Windows computer controls. Its own window, six-app sidebar, live elapsed timer and real Instagram login page inside its browsing pane were observed. The user began entering their own Instagram account; authentication was left to the user. This verifies the internal view and page load, not successful account sign-in or every platform. 39 automated tests passed, plus TypeScript/syntax checks, including the timer renewal/reload regression and backend elapsed-time persistence. An initial startup deadlock was fixed by registering app.whenReady().then(...) without blocking module initialization. A bootstrap logger records startup errors locally.
+
+The Android/iPhone shell now opens its own platform WebView directly from the picker and shows elapsed time in testing mode. Mobile account access and physical-device playback remain unverified. This Windows installer is not an Android or iPhone release.
+
+References: https://www.electronjs.org/docs/latest/api/web-contents-view and https://www.electronjs.org/docs/latest/tutorial/security.
