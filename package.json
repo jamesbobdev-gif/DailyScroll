@@ -8,7 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "check": "tsc --noEmit",
-    "test": "node --test budget.test.mjs server.test.mjs oauth.test.mjs guest.test.mjs connected-feeds.test.mjs public-youtube.test.mjs native-platforms.test.mjs public-previews.test.mjs youtube-feed.test.mjs mirror.test.mjs companion-zip.test.mjs chrome-companion.test.mjs client.test.mjs",
+    "test": "node --test budget.test.mjs server.test.mjs oauth.test.mjs guest.test.mjs connected-feeds.test.mjs public-youtube.test.mjs native-platforms.test.mjs public-previews.test.mjs youtube-feed.test.mjs mirror.test.mjs companion-zip.test.mjs desktop/user-agent.test.mjs chrome-companion.test.mjs client.test.mjs",
     "service": "node server.mjs --testing",
     "service:limited": "node server.mjs"
   },
