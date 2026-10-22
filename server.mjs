@@ -12,6 +12,7 @@ import {createConnectedFeeds} from './connected-feeds.mjs';
 import {createPublicYouTube,channelURL} from './public-youtube.mjs';
 import {createPublicPreviews} from './public-previews.mjs';
 import {initialYouTubeSources,refreshYouTubeFeed} from './youtube-feed.mjs';
+import {buildCompanionZip} from './companion-zip.mjs';
 
 const ROOT=path.dirname(fileURLToPath(import.meta.url));
 const HOUR=3600000;
@@ -29,6 +30,8 @@ export function createService({directory=path.join(ROOT,'data'),clock=Date.now,o
   for(const u of Object.values(db.users)){u.lease=0;u.last=clock();}
   const save=()=>{writeFileSync(filename+'.tmp',JSON.stringify(db),{mode:0o600});renameSync(filename+'.tmp',filename);};
   const hash=v=>createHash('sha256').update(v).digest('hex');
+  let companionZip=null;
+  const companionArchive=()=>companionZip||=buildCompanionZip(path.join(ROOT,'chrome-companion'));
   const random=n=>randomBytes(n).toString('hex');
   function inviteOrigin(req){
     if(process.env.PUBLIC_ORIGIN)return new URL(process.env.PUBLIC_ORIGIN).origin;
@@ -78,7 +81,10 @@ export function createService({directory=path.join(ROOT,'data'),clock=Date.now,o
         }
         const files={'/chrome-companion.zip':['chrome-companion.zip','application/zip'],'/mirror.js':['mirror.js','text/javascript; charset=utf-8'],'/youtube-icon.png':['youtube-icon.png','image/png'],'/tiktok-icon.png':['tiktok-icon.png','image/png'],'/':['client.html','text/html; charset=utf-8'],'/client.js':['client.js','text/javascript; charset=utf-8'],'/client.css':['client.css','text/css; charset=utf-8'],'/feed.css':['feed.css','text/css; charset=utf-8'],'/brand.css':['brand.css','text/css; charset=utf-8'],'/brand-icons.js':['brand-icons.js','text/javascript; charset=utf-8']};
         const f=files[url.pathname];if(!f)fail(404,'Not found.');
-        res.writeHead(200,{'Content-Type':f[1],'Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; media-src 'self' blob:; frame-src https://www.youtube.com https://www.instagram.com https://www.tiktok.com https://www.facebook.com https://player.twitch.tv https://clips.twitch.tv https://www.snapchat.com; connect-src 'self'; img-src 'self' data: https://i.ytimg.com https://*.tiktokcdn-us.com https://*.tiktokcdn.com https://*.muscdn.com; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",'Referrer-Policy':'strict-origin-when-cross-origin'});res.end(readFileSync(path.join(ROOT,'web',f[0])));return;
+        let content;
+        if(url.pathname==='/chrome-companion.zip')content=companionArchive();
+        else{const file=path.join(ROOT,'web',f[0]);if(!existsSync(file))fail(404,'Not found.');content=readFileSync(file);}
+        res.writeHead(200,{'Content-Type':f[1],'Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; media-src 'self' blob:; frame-src https://www.youtube.com https://www.instagram.com https://www.tiktok.com https://www.facebook.com https://player.twitch.tv https://clips.twitch.tv https://www.snapchat.com; connect-src 'self'; img-src 'self' data: https://i.ytimg.com https://*.tiktokcdn-us.com https://*.tiktokcdn.com https://*.muscdn.com; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",'Referrer-Policy':'strict-origin-when-cross-origin'});res.end(content);return;
       }
       rate(req.socket.remoteAddress,600);
       if(req.method==='POST'){
@@ -273,7 +279,11 @@ export function createService({directory=path.join(ROOT,'data'),clock=Date.now,o
         default:fail(404,'Not found.');
       }
       const result=view(u);save();send(200,result);
-    }catch(error){send(error.status||500,{error:error.status?error.message:'Something went wrong. Please try again.'});if(!error.status)console.error(error);}
+    }catch(error){
+      if(!error.status)console.error(error);
+      if(res.headersSent){res.destroy();return;}
+      send(error.status||500,{error:error.status?error.message:'Something went wrong. Please try again.'});
+    }
   });
   return server;
 }
