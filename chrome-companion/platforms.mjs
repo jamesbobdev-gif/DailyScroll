@@ -1,5 +1,5 @@
 export const platforms={
-  YouTube:{url:'https://www.youtube.com/',origins:['https://www.youtube.com','https://m.youtube.com'],auth:['https://accounts.google.com']},
+  YouTube:{url:'https://www.youtube.com/',origins:['https://www.youtube.com','https://m.youtube.com'],auth:['https://accounts.google.com','https://accounts.youtube.com']},
   Instagram:{url:'https://www.instagram.com/',origins:['https://www.instagram.com'],auth:['https://www.facebook.com']},
   TikTok:{url:'https://www.tiktok.com/foryou',origins:['https://www.tiktok.com'],auth:[]},
   Facebook:{url:'https://www.facebook.com/',origins:['https://www.facebook.com','https://m.facebook.com'],auth:[]},

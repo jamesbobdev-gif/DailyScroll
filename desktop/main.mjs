@@ -1,4 +1,5 @@
-import {app,BrowserWindow,WebContentsView,ipcMain,Menu} from 'electron';
+import {app,BrowserWindow,WebContentsView,ipcMain,Menu,session} from 'electron';
+import {browserUserAgent} from './user-agent.mjs';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import path from 'node:path';
 import {createService} from './runtime/server.mjs';
@@ -26,6 +27,7 @@ async function open(platform){
   await stop();error='';const me=await call('start',{platform});accept(me);current=platform;loading=true;
   view=new WebContentsView({webPreferences:{partition:'persist:daily-scroll-social',nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,autoplayPolicy:'document-user-activation-required'}});
   const contents=view.webContents;
+  contents.setUserAgent(socialUserAgent);
   contents.setAudioMuted(false);
   contents.session.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false));
   contents.session.setPermissionCheckHandler(()=>false);
@@ -55,7 +57,11 @@ ipcMain.handle('daily:navigate',async(event,action)=>{
   if(action==='reload')contents.reload();
   return status();
 });
+let socialUserAgent='';
 app.whenReady().then(async()=>{Menu.setApplicationMenu(null);
+const social=session.fromPartition('persist:daily-scroll-social');
+socialUserAgent=browserUserAgent(social.getUserAgent(),app.getName());
+social.setUserAgent(socialUserAgent);
 service=createService({directory:path.join(app.getPath('userData'),'allowance'),testingMode:true});
 await new Promise(resolve=>service.listen(0,'127.0.0.1',resolve));base=`http://127.0.0.1:${service.address().port}`;
 accept(await call('guest',{zone}));
