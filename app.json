@@ -10,11 +10,30 @@
       "bundleIdentifier": "app.thedailyscroll.mobile"
     },
     "android": {
-      "package": "app.thedailyscroll.mobile"
+      "package": "app.thedailyscroll.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#174737"
+      },
+      "versionCode": 1
     },
     "scheme": "dailyscroll",
     "plugins": [
-      "expo-web-browser"
-    ]
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f6f7f0"
+    }
   }
 }
