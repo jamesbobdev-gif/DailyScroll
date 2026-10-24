@@ -59,8 +59,10 @@ The app is only a front end. Everything it shows comes from the Node service, so
 2. **Public tunnel from this PC**: `cloudflared` is installed for the current user. With the service running, open a second terminal and run the command below. It prints an `https://something.trycloudflare.com` address; type that into the app and the phone can connect over mobile data from anywhere, as long as this PC stays on and the tunnel stays open. The address changes every time the tunnel restarts, and anyone who guesses it can reach the service, so treat it as a demo link, not a deployment.
 
    ```bash
-   cloudflared tunnel --url http://localhost:8787
+   npm run tunnel
    ```
+
+   That runs `cloudflared tunnel --url http://localhost:8787`. If the command is not found, open a new terminal first; winget added `cloudflared` to the PATH after installation.
 
 3. **Hosted service** (the real fix): deploy with the repo's `Dockerfile` to a small host (Fly.io, Render, Railway or a VPS), with HTTPS, a persistent volume for `data/`, and `PUBLIC_ORIGIN`, `COOKIE_SECURE=1`, `TOKEN_ENCRYPTION_KEY` set. Then rebuild the APK with `EXPO_PUBLIC_SERVICE_URL` pointing at it so the address screen never appears. Creating the hosting account is the one step that has to be done by the account owner.
 
