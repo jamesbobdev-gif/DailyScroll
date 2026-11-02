@@ -224,10 +224,10 @@ function renderChrome(){
   $('chrome-headline').textContent=platform+'. Yours.';
   $('chrome-limit-copy').textContent=state.me.testingMode?'Testing · No time limit':'One daily hour across all six.';
   if($('chrome-art').dataset.platform!==platform){$('chrome-art').replaceChildren(platformIcon(platform));$('chrome-art').dataset.platform=platform;}
-  $('chrome-open').disabled=!connected||!state.me.open;
+  $('chrome-open').disabled=!connected||!state.me.open;$('chrome-open').hidden=!connected;$('chrome-choices-copy').hidden=connected;
   $('chrome-open').textContent=(state.chromeActive?'Return to ':'Open ')+platform;
-  $('chrome-status').textContent=!connected?(document.documentElement.dataset.dailyChrome==='ready'?'Reload the updated companion in Chrome extensions.':'Connect Chrome below to open the real website.'):state.me.testingMode?'Chrome connected · No time limit':!state.me.open?'Available during your daily hour.':'Chrome connected · Ready';
-  if(state.chromeConnected!==connected)$('chrome-install').open=!connected;
+  $('chrome-status').textContent=!connected?(document.documentElement.dataset.dailyChrome==='ready'?'Reload the updated companion in Chrome extensions.':'The Chrome companion is not connected yet.'):state.me.testingMode?'Chrome connected · No time limit':!state.me.open?'Available during your daily hour.':'Chrome connected · Ready';
+  if(connected&&state.chromeConnected!==connected)$('chrome-install').open=false;
   state.chromeConnected=connected;
 }
 document.addEventListener('daily-chrome-ready',renderChrome);
