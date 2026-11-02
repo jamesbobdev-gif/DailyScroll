@@ -56,7 +56,7 @@ export function createService({directory=path.join(ROOT,'data'),clock=Date.now,o
   }
   const roomFor=u=>u.room?db.rooms[u.room]:null;
   function roomView(u){const r=roomFor(u);return r?{code:u.room,host:r.host===u.name,hostName:r.host,members:r.members.map(name=>({name,online:clock()-(db.users[name]?.seen||0)<20000})),posts:r.posts,current:r.current,hour:r.hour,zone:r.zone}:null;}
-  function view(u){const here=settle(u);u.seen=clock();return {name:u.name,hour:u.hour,zone:u.zone,used:u.used,testingMode,elapsed:testingMode?(u.testingUsed||0):u.used,remaining:testingMode?HOUR:Math.max(0,HOUR-u.used),open:testingMode||(here.hour===u.hour&&u.used<HOUR),allowedUntil:u.lease,now:clock(),posts:u.posts,sources:u.sources||[],youtubeStatus:u.youtubeStatus||null,connections:u.connections||{},room:roomView(u)};}
+  function view(u){const here=settle(u);u.seen=clock();return {name:u.name,guest:!!u.guest,hour:u.hour,zone:u.zone,used:u.used,testingMode,elapsed:testingMode?(u.testingUsed||0):u.used,remaining:testingMode?HOUR:Math.max(0,HOUR-u.used),open:testingMode||(here.hour===u.hour&&u.used<HOUR),allowedUntil:u.lease,now:clock(),posts:u.posts,sources:u.sources||[],youtubeStatus:u.youtubeStatus||null,connections:u.connections||{},room:roomView(u)};}
   function leave(u){const r=roomFor(u);if(r){r.members=r.members.filter(n=>n!==u.name);if(!r.members.length)delete db.rooms[u.room];else if(r.host===u.name)r.host=r.members[0];}u.room=null;}
   const attempts=new Map();
   function rate(key,max=60){const now=clock();let b=attempts.get(key);if(!b||now>b.until){b={count:0,until:now+60000};attempts.set(key,b);}if(++b.count>max)fail(429,'Too many requests. Try again in a minute.');if(attempts.size>10000)for(const[k,v]of attempts)if(v.until<now)attempts.delete(k);}
