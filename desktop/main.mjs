@@ -7,6 +7,7 @@ import {platforms,allowedPlatform} from './runtime/chrome-companion/platforms.mj
 const here=path.dirname(fileURLToPath(import.meta.url)),shellURL=pathToFileURL(path.join(here,'shell.html')).href;
 let window,view,service,base,cookie='',current=null,budget=null,stamp=0,error='',loading=false,busy=false,quitting=false;
 const zone=Intl.DateTimeFormat().resolvedOptions().timeZone;
+const testingMode=process.argv.includes('--testing')||process.env.SCROLL_TEST_MODE==='1';
 async function call(route,body){
   const response=await fetch(base+'/api/'+route,{method:body===undefined?'GET':'POST',headers:{Cookie:cookie,...(body===undefined?{}:{'Content-Type':'application/json'})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(6500)});
   const cookies=response.headers.getSetCookie();if(cookies.length)cookie=cookies.map(v=>v.split(';')[0]).join('; ');
@@ -14,7 +15,7 @@ async function call(route,body){
 }
 function status(){return {platform:current,host:view&&!view.webContents.isDestroyed()?new URL(view.webContents.getURL()||platforms[current].url).hostname:'',loading,error,budget,stamp,now:Date.now()};}
 function publish(){if(window&&!window.isDestroyed())window.webContents.send('daily:status',status());}
-function accept(me){budget={testingMode:me.testingMode,elapsed:me.elapsed,remaining:me.remaining,open:me.open,now:me.now,allowedUntil:me.allowedUntil};stamp=Date.now();publish();}
+function accept(me){budget={testingMode:me.testingMode,elapsed:me.elapsed,remaining:me.remaining,open:me.open,hour:me.hour,now:me.now,allowedUntil:me.allowedUntil};stamp=Date.now();publish();}
 function layout(){if(!view||!window)return;const [width,height]=window.getContentSize();view.setBounds({x:208,y:82,width:Math.max(1,width-208),height:Math.max(1,height-82)});}
 async function stop(){
   const old=view;view=null;current=null;loading=false;
@@ -62,7 +63,7 @@ app.whenReady().then(async()=>{Menu.setApplicationMenu(null);
 const social=session.fromPartition('persist:daily-scroll-social');
 socialUserAgent=browserUserAgent(social.getUserAgent(),app.getName());
 social.setUserAgent(socialUserAgent);
-service=createService({directory:path.join(app.getPath('userData'),'allowance'),testingMode:true});
+service=createService({directory:path.join(app.getPath('userData'),'allowance'),testingMode});
 await new Promise(resolve=>service.listen(0,'127.0.0.1',resolve));base=`http://127.0.0.1:${service.address().port}`;
 accept(await call('guest',{zone}));
 window=new BrowserWindow({title:'DAILY SCROLL',width:1280,height:880,minWidth:800,minHeight:600,backgroundColor:'#fff',show:false,webPreferences:{preload:path.join(here,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true}});
