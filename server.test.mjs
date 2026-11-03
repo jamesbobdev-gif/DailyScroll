@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync,readFileSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {createService} from './server.mjs';
+import {createService,lanAddress} from './server.mjs';
 import {parsePost} from './content.mjs';
 
 test('testing mode opens all six outside the daily hour with an exhausted allowance and preserves normal usage',async()=>{
@@ -32,6 +32,16 @@ test('testing mode opens all six outside the daily hour with an exhausted allowa
   }finally{if(server)await close();rmSync(directory,{recursive:true,force:true});}
 });
 
+test('the invite address prefers real Wi-Fi or Ethernet over virtual adapters',()=>{
+  const v4=(address,internal=false)=>({address,family:'IPv4',internal});
+  const machine={'Ethernet 2':[v4('192.168.56.1')],'Wi-Fi':[{address:'fe80::1',family:'IPv6',internal:false},v4('192.168.1.143')],'vEthernet (WSL)':[v4('172.20.144.1')],'VirtualBox Host-Only Network':[v4('192.168.99.1')],'Tailscale':[v4('100.101.102.103')],'Loopback Pseudo-Interface 1':[v4('127.0.0.1',true)]};
+  assert.equal(lanAddress(machine),'192.168.1.143');
+  assert.equal(lanAddress({'Ethernet':[v4('10.0.0.5')],'Wi-Fi':[v4('172.16.4.9')]}),'172.16.4.9');
+  assert.equal(lanAddress({'Ethernet':[v4('10.0.0.5')],'Docker':[v4('192.168.65.1')]}),'10.0.0.5');
+  assert.equal(lanAddress({'Ethernet 2':[v4('192.168.56.1')]}),'192.168.56.1');
+  assert.equal(lanAddress({'Ethernet':[v4('203.0.113.4')],'Loopback':[v4('127.0.0.1',true)]}),null);
+  assert.equal(lanAddress({}),null);
+});
 test('all six post types resolve to bounded platform embed URLs',()=>{
   for(const [url,platform]of [
     ['https://youtu.be/M7lc1UVf-VE','YouTube'],

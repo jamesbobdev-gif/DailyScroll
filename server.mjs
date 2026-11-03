@@ -15,6 +15,14 @@ import {initialYouTubeSources,refreshYouTubeFeed} from './youtube-feed.mjs';
 import {buildCompanionZip} from './companion-zip.mjs';
 
 const ROOT=path.dirname(fileURLToPath(import.meta.url));
+// Picks the address phones on the same Wi-Fi can reach. Virtual adapters (VirtualBox, VMware, Hyper-V, WSL, Tailscale, Docker) are skipped, then 192.168.x.x wins over 172.16-31.x.x over 10.x.x.x; the VirtualBox host-only default 192.168.56.x is ranked last.
+export function lanAddress(interfaces){
+  const virtual=/virtualbox|vbox|vmware|hyper-v|wsl|vethernet|tailscale|docker|loopback|bluetooth|npcap|pseudo/i;
+  const rank=a=>/^192\.168\.56\./.test(a)?3:a.startsWith('192.168.')?0:/^172\.(1[6-9]|2\d|3[01])\./.test(a)?1:a.startsWith('10.')?2:null;
+  const found=[];
+  for(const [name,list] of Object.entries(interfaces||{})){if(virtual.test(name))continue;for(const n of list||[]){if(!n||n.family!=='IPv4'||n.internal)continue;const score=rank(n.address);if(score!==null)found.push({address:n.address,score});}}
+  found.sort((a,b)=>a.score-b.score);return found[0]?.address||null;
+}
 const HOUR=3600000;
 export function createService({directory=path.join(ROOT,'data'),clock=Date.now,oauthEnv=process.env,oauthFetcher=fetch,requireConnections=false,publicFetcher=fetch,testingMode=false}={}) {
   mkdirSync(directory,{recursive:true});
@@ -37,8 +45,8 @@ export function createService({directory=path.join(ROOT,'data'),clock=Date.now,o
     if(process.env.PUBLIC_ORIGIN)return new URL(process.env.PUBLIC_ORIGIN).origin;
     const host=req.headers.host||'localhost:8787';
     if(/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)){
-      const lan=Object.values(networkInterfaces()).flat().find(n=>n&&n.family==='IPv4'&&!n.internal&&/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(n.address));
-      if(lan)return `http://${lan.address}:${server.address().port}`;
+      const lan=lanAddress(networkInterfaces());
+      if(lan)return `http://${lan}:${server.address().port}`;
     }
     return `http://${host}`;
   }
