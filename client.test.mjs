@@ -78,3 +78,19 @@ test('opening the native YouTube view leaves the app picker ready underneath',as
   vm.runInContext(client.split('\n').find(line=>line.startsWith('async function openPlatform(')),context);
   await context.openPlatform('YouTube');assert.equal(rendered,'choose');assert.equal(state.roomMode,false);assert.equal(message.type,'open-platform');assert.equal(message.platform,'YouTube');
 });
+test('the account form signs in or creates an account, and logging out returns to a guest profile',async()=>{
+  const requests=[],fields={'auth-name':{value:' Alice '},'auth-password':{value:'a-real-test-password'}};let noticed='';
+  const state={authMode:'register',me:{name:'scroller_1',guest:true}};
+  const context=vm.createContext({state,Intl,$:id=>fields[id],pause:async()=>{},notice:m=>{noticed=m;},update:me=>{state.me=me;},api:async(route,body)=>{requests.push({route,...body});return route==='logout'?{ok:true}:{name:route==='guest'?'scroller_1':body.name,guest:route==='guest'};}});
+  for(const name of ['submitAccount','signOut'])vm.runInContext(client.split('\n').find(line=>line.startsWith('async function '+name+'(')),context);
+  await context.submitAccount();
+  assert.equal(requests[0].route,'register');assert.equal(requests[0].name,'Alice');assert.equal(requests[0].password,'a-real-test-password');assert.ok(requests[0].zone);
+  assert.equal(state.me.name,'Alice');assert.equal(state.me.guest,false);assert.equal(fields['auth-password'].value,'');assert.match(noticed,/Alice/);
+  state.authMode='login';fields['auth-password'].value='a-real-test-password';await context.submitAccount();assert.equal(requests[1].route,'login');
+  await context.signOut();assert.deepEqual(requests.slice(2).map(r=>r.route),['logout','guest']);assert.equal(state.me.guest,true);assert.equal(state.authMode,'login');assert.match(noticed,/guest/);
+  const elements={};const el=id=>elements[id]||=({});
+  const view=vm.createContext({state:{authMode:'login',me:{name:'alice',guest:false}},$:el});
+  vm.runInContext(client.split('\n').find(line=>line.startsWith('function renderAccount(')),view);
+  view.renderAccount();assert.equal(el('account-button').hidden,false);assert.equal(el('account-button').textContent,'alice');assert.equal(el('account-guest').hidden,true);assert.equal(el('account-signed').hidden,false);assert.match(el('account-name').textContent,/alice/);
+  view.state.me={name:'scroller_2',guest:true};view.renderAccount();assert.equal(el('account-button').textContent,'Sign in');assert.equal(el('account-guest').hidden,false);assert.equal(el('auth-submit').textContent,'Sign in');
+});
