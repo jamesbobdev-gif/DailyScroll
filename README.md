@@ -2,7 +2,7 @@
 
 A social browsing app with a six-platform picker: YouTube, Instagram, TikTok, Facebook, Twitch, and Snapchat. This repository contains the Windows desktop app, an Expo phone app, a browser interface, a Chrome companion, and their shared Node.js service.
 
-Development prototype. Testing mode currently disables the daily schedule and time limit. The phone app is not published to an app store.
+Experimental source preview. Testing mode currently disables the daily schedule and time limit. The phone app is not published to an app store. See [release notes](RELEASE-NOTES.md) for features, installation guidance, and unresolved release gaps. No verified Windows installer is attached to this source preview.
 
 ## Start here
 
