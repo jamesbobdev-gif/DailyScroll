@@ -79,8 +79,11 @@ function showSignIn(){
   $('social-signin').replaceChildren();
   for(const p of providers){const b=button(`${symbols[p.label]} ${p.label}`,()=>socialSignIn(p.id));b.title=p.ready?(p.note||`Sign in with ${p.label}`):'Developer setup required';b.dataset.ready=p.ready;$('social-signin').append(b);}
 }
+function renderAccount(){const me=state.me,guest=!me||!!me.guest;$('account-button').hidden=!me;$('account-button').textContent=guest?'Sign in':me.name;$('account-guest').hidden=!guest;$('account-signed').hidden=guest;$('account-name').textContent=guest?'':'Signed in as '+me.name+'. Your hour, saved posts and rooms follow this account on every device.';$('auth-submit').textContent=state.authMode==='login'?'Sign in':'Create account';$('auth-toggle').textContent=state.authMode==='login'?'New here? Create an account':'Already have an account? Sign in';$('auth-password').autocomplete=state.authMode==='login'?'current-password':'new-password';}
+async function submitAccount(){const name=$('auth-name').value.trim(),password=$('auth-password').value;await pause();update(await api(state.authMode,{name,password,zone:Intl.DateTimeFormat().resolvedOptions().timeZone}));$('auth-password').value='';notice(state.authMode==='login'?'Signed in as '+state.me.name+'.':'Account created. You are signed in as '+state.me.name+'.');}
+async function signOut(){await pause();await api('logout',{});state.authMode='login';update(await api('guest',{zone:Intl.DateTimeFormat().resolvedOptions().timeZone}));notice('Logged out. You are scrolling as a guest on this device again.');}
 function notice(message,error=false){$('notice').hidden=!message;$('notice').textContent=message;$('notice').classList.toggle('error',error);}
-async function api(route,data,retry=true){const res=await fetch('/api/'+route,{method:data===undefined?'GET':'POST',headers:data===undefined?{}:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});const result=await res.json();if(!res.ok){if(res.status===401&&retry&&route!=='guest'){pause(false);update(await api('guest',{zone:Intl.DateTimeFormat().resolvedOptions().timeZone},false));return api(route,data,false);}throw Error(result.error||'Could not connect.');}return result;}
+async function api(route,data,retry=true){const res=await fetch('/api/'+route,{method:data===undefined?'GET':'POST',headers:data===undefined?{}:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});const result=await res.json();if(!res.ok){if(res.status===401&&retry&&!['guest','login','register'].includes(route)){pause(false);update(await api('guest',{zone:Intl.DateTimeFormat().resolvedOptions().timeZone},false));return api(route,data,false);}throw Error(result.error||'Could not connect.');}return result;}
 function update(me){const activePost=state.active&&!state.roomMode&&!state.mirroring?current()?.id:null;state.me=me;if(activePost){const index=posts().findIndex(p=>p.id===activePost);if(index>=0)state.current=index;else pause(false);}state.offset=me.now-Date.now();if(state.active){state.lease=me.allowedUntil;if(!me.open||me.allowedUntil<=me.now)pause(false);}render();}
 function timeLabel(hour){return `${hour%12||12} ${hour<12?'AM':'PM'}`;}
 function posts(){const all=state.roomMode?state.me.room?.posts||[]:state.me.posts;const filtered=state.filter==='All'||state.roomMode?all:all.filter(p=>p.platform===state.filter);return state.filter==='YouTube'&&!state.roomMode?youtubePosts(filtered):filtered;}
@@ -134,7 +137,7 @@ function render(){
   $('signed-in').hidden=!me;$('navigation').hidden=!me;
   document.body.classList.toggle('signed',!!me);
   if(!me)return;
-  renderChrome();
+  renderChrome();renderAccount();
   document.body.dataset.page=state.page;
   document.body.dataset.platform=state.filter.toLowerCase();
   document.body.classList.toggle('playing',state.active);
@@ -221,10 +224,10 @@ function renderChrome(){
   $('chrome-headline').textContent=platform+'. Yours.';
   $('chrome-limit-copy').textContent=state.me.testingMode?'Testing · No time limit':'One daily hour across all six.';
   if($('chrome-art').dataset.platform!==platform){$('chrome-art').replaceChildren(platformIcon(platform));$('chrome-art').dataset.platform=platform;}
-  $('chrome-open').disabled=!connected||!state.me.open;
+  $('chrome-open').disabled=!connected||!state.me.open;$('chrome-open').hidden=!connected;$('chrome-choices-copy').hidden=connected;
   $('chrome-open').textContent=(state.chromeActive?'Return to ':'Open ')+platform;
-  $('chrome-status').textContent=!connected?(document.documentElement.dataset.dailyChrome==='ready'?'Reload the updated companion in Chrome extensions.':'Connect Chrome below to open the real website.'):state.me.testingMode?'Chrome connected · No time limit':!state.me.open?'Available during your daily hour.':'Chrome connected · Ready';
-  if(state.chromeConnected!==connected)$('chrome-install').open=!connected;
+  $('chrome-status').textContent=!connected?(document.documentElement.dataset.dailyChrome==='ready'?'Reload the updated companion in Chrome extensions.':'The Chrome companion is not connected yet.'):state.me.testingMode?'Chrome connected · No time limit':!state.me.open?'Available during your daily hour.':'Chrome connected · Ready';
+  if(connected&&state.chromeConnected!==connected)$('chrome-install').open=false;
   state.chromeConnected=connected;
 }
 document.addEventListener('daily-chrome-ready',renderChrome);
@@ -274,6 +277,10 @@ on('connect-back','click',()=>{state.page='choose';notice('');render();});
 on('provider-signin','click',()=>socialSignIn(state.filter.toLowerCase()));
 on('sample-posts','click',async()=>{for(const url of ['https://www.youtube.com/watch?v=M7lc1UVf-VE','https://www.tiktok.com/@scout2015/video/6718335390845095173'])update(await api('posts',{url}));notice('Sample videos added.');});
 for(const[id,delta]of [['previous',-1],['next',1]])on(id,'click',()=>movePost(delta));
+on('auth-form','submit',submitAccount);
+on('auth-toggle','click',()=>{state.authMode=state.authMode==='login'?'register':'login';renderAccount();});
+on('logout','click',signOut);
+on('account-button','click',()=>{pause();state.page='settings';notice('');render();window.scrollTo(0,0);if(state.me?.guest)$('auth-name').focus();});
 on('schedule-form','submit',async()=>{update(await api('schedule',{hour:Number($('hour').value),zone:$('zone').value.trim()}));notice('Your daily hour is saved.');});
 on('create-room','click',async()=>update(await api('rooms/create',{})));
 on('join-form','submit',async()=>{update(await api('rooms/join',{code:$('room-code').value}));notice('You joined the room.');});

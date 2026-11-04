@@ -7,7 +7,7 @@ Help an end user choose a social platform, browse/scroll, pause, and return to t
 ## Repository map
 
 - `desktop/main.mjs`: Electron main process, embedded official-site browsing, navigation, local budget service.
-- `desktop/shell.{html,css,js}`: persistent sidebar, navigation, elapsed timer, app picker.
+- `desktop/shell.{html,css,js}`: persistent sidebar, navigation, Pause, timer, app picker.
 - `desktop/prepare.mjs`: generates `desktop/runtime/` from the shared service sources. Edit the originals, not the generated copies.
 - `App.tsx`: Expo shell, hidden service WebView, native browsing handoff and budget bridge.
 - `NativeFeed.tsx`: native platform WebView, tabs, pause/resume and return controls.
@@ -28,7 +28,7 @@ Use the committed lockfiles. Do not commit dependencies or build output.
 
 ## Current behavior and recent fixes
 
-Testing mode intentionally disables time limits and counts elapsed browsing time. `npm run service:limited` enables normal enforcement; desktop currently starts its service in testing mode.
+Testing mode intentionally disables time limits and counts elapsed browsing time. `npm run service:limited` enables normal enforcement. The desktop app enforces the hour by default; `--testing` on its command line or `SCROLL_TEST_MODE=1` turns testing mode on there too.
 
 The browser's Saved navigation tab was removed, though saved-content data and internal UI remain. Public feed browsing and real-site browsing are separate implementations.
 
