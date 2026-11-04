@@ -1,0 +1,16 @@
+# Keep the build context small and never ship secrets, data or local profiles.
+node_modules
+data
+.env
+.env.*
+!.env.example
+.expo
+dist
+android
+ios
+desktop
+docs
+.git
+.claude
+*.log
+*.test.mjs

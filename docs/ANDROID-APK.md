@@ -64,7 +64,7 @@ The app is only a front end. Everything it shows comes from the Node service, so
 
    That runs `cloudflared tunnel --url http://localhost:8787`. If the command is not found, open a new terminal first; winget added `cloudflared` to the PATH after installation.
 
-3. **Hosted service** (the real fix): deploy with the repo's `Dockerfile` to a small host (Fly.io, Render, Railway or a VPS), with HTTPS, a persistent volume for `data/`, and `PUBLIC_ORIGIN`, `COOKIE_SECURE=1`, `TOKEN_ENCRYPTION_KEY` set. Then rebuild the APK with `EXPO_PUBLIC_SERVICE_URL` pointing at it so the address screen never appears. Creating the hosting account is the one step that has to be done by the account owner.
+3. **Hosted service** (the real fix): deploy with the repo's `Dockerfile` to a small host (Fly.io, Render, Railway or a VPS), with HTTPS, a persistent volume for `data/`, and `PUBLIC_ORIGIN`, `COOKIE_SECURE=1`, `TOKEN_ENCRYPTION_KEY` set. Then rebuild the APK with `EXPO_PUBLIC_SERVICE_URL` pointing at it so the address screen never appears. Creating the hosting account is the one step that has to be done by the account owner. Step-by-step instructions for Fly.io are in [HOSTING.md](HOSTING.md).
 
 ## What works and what does not
 

@@ -1,0 +1,39 @@
+# Fly.io configuration for the Daily Scroll service.
+# `fly launch --copy-config` keeps this file and only asks for the app name and region.
+# See docs/HOSTING.md for the full walkthrough.
+
+app = "daily-scroll"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8787"
+  SERVICE_DATA_DIR = "/app/data"
+  # PUBLIC_ORIGIN, COOKIE_SECURE and TOKEN_ENCRYPTION_KEY are set with `fly secrets set`, not here.
+
+# One persistent volume keeps data/store.json and the encrypted token vault across deploys.
+[[mounts]]
+  source = "daily_scroll_data"
+  destination = "/app/data"
+  initial_size = "1gb"
+
+[http_service]
+  internal_port = 8787
+  force_https = true
+  # Keep one machine running so the phone app always gets an answer.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    timeout = "5s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
