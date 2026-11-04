@@ -2,7 +2,7 @@
   "expo": {
     "name": "The Daily Scroll",
     "slug": "the-daily-scroll",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
@@ -10,11 +10,30 @@
       "bundleIdentifier": "app.thedailyscroll.mobile"
     },
     "android": {
-      "package": "app.thedailyscroll.mobile"
+      "package": "app.thedailyscroll.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#174737"
+      },
+      "versionCode": 2
     },
     "scheme": "dailyscroll",
     "plugins": [
-      "expo-web-browser"
-    ]
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f6f7f0"
+    }
   }
 }
