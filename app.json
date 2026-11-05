@@ -2,7 +2,7 @@
   "expo": {
     "name": "The Daily Scroll",
     "slug": "the-daily-scroll",
-    "version": "0.3.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
@@ -15,7 +15,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#174737"
       },
-      "versionCode": 2
+      "versionCode": 3
     },
     "scheme": "dailyscroll",
     "plugins": [

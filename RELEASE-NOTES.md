@@ -1,36 +1,41 @@
-# Daily Scroll 0.3.0 — Windows and Android preview
+# Daily Scroll 1.0.0
 
-Daily Scroll brings YouTube, Instagram, TikTok, Facebook, Twitch, and Snapchat into one app. Choose a platform, browse its official website inside the app, and use **All apps** to return to the picker.
+Daily Scroll puts YouTube, Instagram, TikTok, Facebook, Twitch and Snapchat in one app with one hour a day to spend on them. Pick a platform, browse its official website inside the app, and use **All apps** to go back to the picker. When your hour is used up, it opens again tomorrow.
 
-This is an experimental prerelease. Platform sign-in, physical-phone playback, and security work remain incomplete. Testing mode is enabled: the timer measures active browsing, and daily schedules and time limits are disabled.
+This is the first official release. Earlier 0.3.0 builds were previews.
 
 ## Downloads
 
-- **Windows:** `Daily-Scroll-Setup-0.3.0.exe` — run the installer and open Daily Scroll. It starts its own internal service. The executable is unsigned and Windows may display an unrecognized-publisher warning.
-- **Android:** `Daily-Scroll-Android-preview.apk` — open it on an Android phone and allow installation from the download source when prompted. The APK is signed with this project's preview key. It is not a Google Play release.
-- **iPhone:** not available yet. Apple signing and TestFlight distribution require an Apple Developer Program account and setup in App Store Connect. No installable iPhone build or TestFlight link is included.
+- **Windows:** `Daily-Scroll-Setup-1.0.0.exe`. Run the installer and open Daily Scroll. It runs its own service, so it needs no setup. The installer is unsigned, so Windows may warn about an unrecognized publisher. Choose **More info → Run anyway**.
+- **Android:** `Daily-Scroll-Android-1.0.0.apk`. Open it on an Android phone and allow installs from that source when asked. The APK is signed with this project's own key. It is not on Google Play.
+- **iPhone:** not available yet. It needs an Apple Developer Program account and TestFlight setup.
 
-Checksum files accompany the Windows and Android downloads. These confirm file integrity, not publisher identity or comprehensive security review.
+Each download comes with a SHA-256 checksum file. It confirms the file arrived intact. It does not prove who published it.
+
+## What's in 1.0.0
+
+- One hour a day across all six platforms, with a countdown, **Pause** to stop the clock, and a clear "done for today" screen. The Windows app has the daily limit on.
+- A sidebar with back, forward and **All apps**, which stays put on Windows.
+- Website sign-ins that stay inside Daily Scroll, separate from Chrome.
+- Saved posts and rooms you share with friends.
+- Optional YouTube and Twitch connections for your own subscriptions and follows.
+- Security fixes from the October 22 review:
+  - Signing out of a guest account now unlinks its connected accounts from the device.
+  - Sign-in cookies are marked Secure when the service runs over HTTPS.
+  - All high-severity dependency advisories are fixed.
 
 ## Phone service setup
 
-The Android app needs a separately running Daily Scroll service. From the source folder on your computer, run `npm ci`, then `npm run service`. Connect the phone to the same trusted Wi-Fi and enter `http://YOUR_COMPUTER_WIFI_ADDRESS:8787` in the app. Keep the computer awake. The Windows app's internal service is separate and does not provide this phone connection.
+The Android app connects to a Daily Scroll service you run on a computer. In the source folder, run `npm ci`, then `npm run service:limited` to get the one-hour limit. `npm run service` turns the limit off for testing. Put the phone on the same trusted Wi-Fi and enter `http://YOUR_COMPUTER_WIFI_ADDRESS:8787` in the app. Keep the computer awake. The Windows app's own service doesn't serve phones.
 
-See [phone installation](docs/PHONE-INSTALLATION.md) for setup and the prepared iPhone build path. Do not expose the development service to the public internet.
-
-## Features
-
-- Six official websites inside the app's browsing view.
-- Persistent Windows sidebar and navigation controls.
-- Elapsed browsing timer and a visible return to the app picker.
-- Local website sessions separate from Chrome.
-- Site-controlled audio.
-- Android layout fixes and support for local development-service connections.
+[Phone installation](docs/PHONE-INSTALLATION.md) has the full steps. Don't expose this service to the public internet. [Hosting](docs/HOSTING.md) describes the HTTPS setup to use instead.
 
 ## Known limitations
 
-Some platforms reject embedded-browser sign-in. Earlier Windows walkthroughs observed YouTube Shorts, Instagram browsing, Twitch discovery, and Snapchat Spotlight; comprehensive signed-in acceptance testing remains incomplete. Phone installation, sign-in, and playback still need physical-device testing. This release does not block browsing in other apps. Rooms synchronize post selection, not playback position or play/pause.
+- Some platforms block sign-in inside an embedded browser. Google sign-in in particular doesn't work in the YouTube view. Browsing while signed out works.
+- Phone sign-in and playback have had only limited testing on physical devices.
+- Daily Scroll doesn't block the platforms' own apps or other browsers.
+- Rooms share which post is open. They don't sync playback position or play/pause.
+- Five moderate dependency advisories remain. They are in the build tools (Expo, electron-builder), not in the app.
 
-An October 22 security review identified connected-account recovery after sign-out, insecure defaults for public service hosting, and dependency advisories. These have not been verified as resolved. This preview is for development evaluation and is not ready for general use or public service hosting.
-
-Daily Scroll is independent and is not affiliated with the supported platforms. In bug reports, include the operating system, selected platform, and reproduction steps. Remove private account information from screenshots and logs.
+Daily Scroll is independent and isn't affiliated with any of the platforms it supports. When you report a bug, include your operating system, the platform and the steps to reproduce it. Remove private account details from screenshots and logs.
