@@ -140,3 +140,29 @@ test('accounts, room sync, time-zone schedule, server clock and restart persiste
     await call('logout',{},alice);assert.equal((await call('me',undefined,alice)).status,401);
   }finally{await new Promise(resolve=>server.close(resolve));rmSync(directory,{recursive:true,force:true});}
 });
+
+test('signing out keeps a connected guest account from returning to the next guest, and https hosting marks cookies Secure',async()=>{
+  const directory=mkdtempSync(path.join(tmpdir(),'scroll-signout-'));
+  let server,base,cookie='';
+  const open=async(oauthEnv={})=>{server=createService({directory,oauthEnv});await new Promise(r=>server.listen(0,'127.0.0.1',r));base=`http://127.0.0.1:${server.address().port}`;};
+  const close=async()=>{await new Promise(r=>server.close(r));server=null;};
+  const keep=response=>{const fresh=response.headers.getSetCookie().map(v=>v.split(';')[0]);const jar=new Map(cookie.split('; ').filter(Boolean).map(v=>v.split('=')));for(const c of fresh){const[k,v]=c.split('=');if(v)jar.set(k,v);else jar.delete(k);}cookie=[...jar].map(([k,v])=>`${k}=${v}`).join('; ');};
+  async function call(route,body){const response=await fetch(base+'/api/'+route,{method:body===undefined?'GET':'POST',headers:{Cookie:cookie,...(body===undefined?{}:{'Content-Type':'application/json'})},body:body===undefined?undefined:JSON.stringify(body)});keep(response);return {response,me:await response.json()};}
+  try{
+    await open();
+    const first=await call('guest',{zone:'America/New_York'});
+    assert.ok(first.response.headers.getSetCookie().every(c=>!c.includes('Secure')),'plain local http must not set Secure');
+    await call('logout',{});
+    assert.equal((await call('guest',{zone:'America/New_York'})).me.name,first.me.name,'an unconnected guest returns on the same device');
+    await close();
+    const file=path.join(directory,'store.json'),store=JSON.parse(readFileSync(file,'utf8'));
+    store.users[first.me.name].connections={youtube:{display:'Someone',connectedAt:1}};writeFileSync(file,JSON.stringify(store));
+    await open({PUBLIC_ORIGIN:'https://scroll.example'});
+    const logout=await call('logout',{});assert.equal(logout.response.status,200);
+    assert.match(logout.response.headers.get('set-cookie'),/Secure/);
+    const next=await call('guest',{zone:'America/New_York'});
+    assert.notEqual(next.me.name,first.me.name,'a connected guest must not be handed to the next guest');
+    assert.deepEqual(next.me.connections,{});
+    assert.ok(next.response.headers.getSetCookie().every(c=>c.includes('Secure')),'https public origin must set Secure');
+  }finally{if(server)await close();rmSync(directory,{recursive:true,force:true});}
+});

@@ -50,6 +50,8 @@ export function createService({directory=path.join(ROOT,'data'),clock=Date.now,o
     }
     return `http://${host}`;
   }
+  // Cookies are HTTPS-only whenever the service is reached over HTTPS: directly, by explicit setting, or by an https:// public address.
+  const secureFlag=req=>req.socket.encrypted||oauthEnv.COOKIE_SECURE==='1'||/^https:\/\//i.test(oauthEnv.PUBLIC_ORIGIN||'')?'; Secure':'';
   const fail=(status,message)=>{throw Object.assign(new Error(message),{status});};
   function local(now,zone){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hourCycle:'h23'}).formatToParts(new Date(now));const get=t=>parts.find(p=>p.type===t).value;return {day:`${get('year')}-${get('month')}-${get('day')}`,hour:Number(get('hour'))};}
   function settle(u,now=clock()) {
@@ -122,7 +124,7 @@ export function createService({directory=path.join(ROOT,'data'),clock=Date.now,o
         }
         mergeDevice(u,device);
         const value=random(32);db.sessions[hash(value)]={name,deviceId,expires:clock()+30*86400000};
-        const secure=oauthEnv.COOKIE_SECURE==='1'?'; Secure':'';
+        const secure=secureFlag(req);
         const cookies=[`scroll_session=${value}; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000${secure}`];
         if(freshDevice)cookies.push(`scroll_device=${freshDevice}; HttpOnly; SameSite=Strict; Path=/; Max-Age=31536000${secure}`);
         save();return send(200,view(u),{'Set-Cookie':cookies});
@@ -140,7 +142,7 @@ export function createService({directory=path.join(ROOT,'data'),clock=Date.now,o
       const oauthRoute=url.pathname.match(/^\/api\/oauth\/(youtube|instagram|tiktok|facebook|twitch|snapchat)\/(start|callback)$/);
       if(oauthRoute&&req.method==='GET'){
         const [,provider,action]=oauthRoute;
-        const secure=oauthEnv.COOKIE_SECURE==='1'?'; Secure':'';
+        const secure=secureFlag(req);
         if(action==='start'){
           const flow=oauth.begin(provider,url.searchParams.get('handoff'));
           res.writeHead(302,{'Location':flow.url,'Set-Cookie':`scroll_oauth=${flow.binding}; HttpOnly; SameSite=Lax; Path=/api/oauth/; Max-Age=300${secure}`,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});res.end();return;
@@ -181,7 +183,7 @@ export function createService({directory=path.join(ROOT,'data'),clock=Date.now,o
         if(!deviceId||!db.devices[deviceId]){newDeviceToken=random(32);deviceId=hash(newDeviceToken);db.devices[deviceId]={day:local(clock(),u.zone).day,zone:u.zone,used:0};}
         mergeDevice(u,db.devices[deviceId]);
         const value=random(32);db.sessions[hash(value)]={name,deviceId,expires:clock()+30*86400000};save();
-        const secure=req.socket.encrypted||process.env.COOKIE_SECURE==='1'?'; Secure':'';
+        const secure=secureFlag(req);
         const cookies=[`scroll_session=${value}; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000${secure}`];
         if(newDeviceToken)cookies.push(`scroll_device=${newDeviceToken}; HttpOnly; SameSite=Strict; Path=/; Max-Age=31536000${secure}`);
         return send(200,view(u),{'Set-Cookie':cookies});
@@ -246,7 +248,12 @@ export function createService({directory=path.join(ROOT,'data'),clock=Date.now,o
       if(url.pathname==='/api/me'&&req.method==='GET')return send(200,view(u));
       if(req.method!=='POST')fail(405,'Method not allowed.');
       switch(url.pathname){
-        case '/api/logout': u.lease=0;if(token)delete db.sessions[hash(token)];save();return send(200,{ok:true},{'Set-Cookie':'scroll_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'});
+        case '/api/logout':{
+          u.lease=0;if(token)delete db.sessions[hash(token)];
+          // A guest with connected social accounts must not be handed back to the next guest on this device.
+          const device=db.devices[deviceId];if(device?.guest===u.name&&Object.keys(u.connections||{}).length)delete device.guest;
+          save();return send(200,{ok:true},{'Set-Cookie':`scroll_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secureFlag(req)}`});
+        }
         case '/api/schedule':schedule(u,b.hour,b.zone);break;
         case '/api/start':
         case '/api/pulse': {
