@@ -15,7 +15,7 @@ async function call(route,body){
 }
 function status(){return {platform:current,host:view&&!view.webContents.isDestroyed()?new URL(view.webContents.getURL()||platforms[current].url).hostname:'',loading,error,budget,stamp,now:Date.now()};}
 function publish(){if(window&&!window.isDestroyed())window.webContents.send('daily:status',status());}
-function accept(me){budget={testingMode:me.testingMode,elapsed:me.elapsed,remaining:me.remaining,open:me.open,hour:me.hour,now:me.now,allowedUntil:me.allowedUntil};stamp=Date.now();publish();}
+function accept(me){budget={testingMode:me.testingMode,elapsed:me.elapsed,remaining:me.remaining,open:me.open,hour:me.hour,now:me.now,allowedUntil:me.allowedUntil,locked:me.used>0||me.allowedUntil>me.now};stamp=Date.now();publish();}
 function layout(){if(!view||!window)return;const [width,height]=window.getContentSize();view.setBounds({x:208,y:82,width:Math.max(1,width-208),height:Math.max(1,height-82)});}
 async function stop(){
   const old=view;view=null;current=null;loading=false;
@@ -48,6 +48,7 @@ async function open(platform){
 function trusted(event){if(event.sender!==window?.webContents||event.senderFrame!==window.webContents.mainFrame||event.senderFrame.url!==shellURL)throw Error('Unsupported caller.');}
 let queue=Promise.resolve();
 ipcMain.handle('daily:open',(event,platform)=>{trusted(event);const next=queue.then(()=>open(platform));queue=next.catch(()=>{});return next;});
+ipcMain.handle('daily:schedule',(event,hour)=>{trusted(event);if(!Number.isInteger(hour)||hour<0||hour>23)throw Error('Choose an hour.');const next=queue.then(async()=>{accept(await call('schedule',{hour,zone}));return status();});queue=next.catch(()=>{});return next;});
 ipcMain.handle('daily:status',event=>{trusted(event);return status();});
 ipcMain.handle('daily:navigate',async(event,action)=>{
   trusted(event);if(!['back','forward','reload','home','close'].includes(action))throw Error('Unsupported action.');
