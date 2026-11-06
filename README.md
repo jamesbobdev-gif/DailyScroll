@@ -1,70 +1,80 @@
 # Daily Scroll
 
-A social browsing app with a six-platform picker: YouTube, Instagram, TikTok, Facebook, Twitch, and Snapchat. This repository contains the Windows desktop app, an Expo phone app, a browser interface, a Chrome companion, and their shared Node.js service.
+**One hour of social media a day. Then it closes.**
 
-Experimental Windows and Android preview. Testing mode disables the daily schedule and time limit. See [Releases](https://github.com/jamesbobdev-gif/DailyScroll/releases) for installers, [phone setup](docs/PHONE-INSTALLATION.md), and [release notes](RELEASE-NOTES.md) for unresolved release gaps. An iPhone build is pending Apple signing and TestFlight setup.
+Daily Scroll puts YouTube, Instagram, TikTok, Facebook, Twitch and Snapchat in one window with one shared hour a day. Pick a platform, browse its real website inside the app, signed in as yourself, and when the hour is used up the app closes the site and opens again tomorrow at the time you chose. **Pause** stops the clock. **All apps** takes you back to the picker.
 
-## Start here
+It is not a blocker. Nothing stops you opening Instagram somewhere else. It is a place to do your scrolling where it is counted, so that an hour is an hour.
 
-- **Claude / coding assistants:** read [CLAUDE.md](CLAUDE.md).
-- **Windows app:** [desktop/README.md](desktop/README.md).
-- **Optional provider credentials:** [ACCOUNT-SETUP.md](ACCOUNT-SETUP.md).
-- Earlier implementation notes: [docs/DEVELOPMENT-HISTORY.md](docs/DEVELOPMENT-HISTORY.md). Some describe superseded interfaces.
+<p align="center"><img src="docs/images/picker.jpg" width="360" alt="The picker: six platform cards, the elapsed-time clock at the top, and Scroll, Friends and My hour tabs at the bottom"> <img src="docs/images/your-youtube.jpg" width="360" alt="The Your YouTube page in the browser app, offering the Chrome companion, the Windows app, or saved posts and public videos"></p>
+<p align="center"><sub>The browser app in testing mode, no account signed in.</sub></p>
 
-## Run the service and browser interface
+## Install
 
-Use Node.js 22 or later and npm.
+**Windows:** download `Daily-Scroll-Setup-<version>.exe` from the [latest release](https://github.com/jamesbobdev-gif/DailyScroll/releases/latest) and run it. The installer is not code-signed yet, so Windows warns: **More info, then Run anyway**. The Windows app runs its own service, so there is nothing else to set up. The hour is on from the first launch.
 
-```sh
+**Android:** the `.apk` is attached to the same release. The phone app needs the Daily Scroll service running on a computer on the same Wi-Fi; [docs/PHONE-INSTALLATION.md](docs/PHONE-INSTALLATION.md) has the steps. The APK is signed with the project's own key and is not on Google Play.
+
+**In a browser, from source:** Node 22 or newer, then
+
+```
 npm ci
-npm run service
+npm run service:limited
 ```
 
-Open http://localhost:8787. This starts testing mode. For the scheduled daily hour and allowance enforcement, use `npm run service:limited` instead.
+and open http://localhost:8787. The browser app can show saved posts and public videos on its own. To open the real sites from it, load `chrome-companion/` as an unpacked extension in Chrome (the page explains how), or use the Windows app instead.
 
-The service creates anonymous device profiles and writes local state to `data/` by default. `SERVICE_DATA_DIR` can select another private data directory. No Daily Scroll account is required.
+**iPhone:** not available yet. It needs an Apple Developer account and TestFlight setup that nobody has done.
 
-## Run the Windows app
+## What's in the box
 
-After installing root dependencies:
+| | |
+|---|---|
+| **Windows app** (`desktop/`) | The whole thing in one window: a sidebar with the six platforms, back and forward, Pause and the countdown, and the real website in a browsing pane. Sign-ins stay in the app's own browser profile, separate from Chrome. |
+| **Browser app** (`web/`) | The picker, your hour, saved posts, public videos and rooms, served by the service. With the Chrome companion it opens the real sites in Chrome and keeps the timer on them. |
+| **Chrome companion** (`chrome-companion/`) | A small extension that lets the browser app open YouTube and the others in a managed Chrome tab, count the time, and close the tab when the hour ends. |
+| **Phone app** (`App.tsx`, `NativeFeed.tsx`) | An Expo app for Android that opens each platform's mobile site with the timer on top. It talks to a service you run. |
+| **The service** (`server.mjs`) | One small Node process with a JSON file for storage. It owns the hour: when it opens, how much is used, who is in which room. The Windows app bundles its own copy. |
 
-```sh
-cd desktop
+What you get on top of the hour: a choice of when your hour starts (locked for the day once you have started scrolling), **Pause**, a "done for today" screen, saved posts you paste in, public video feeds from channels you pick, rooms where friends follow the same post, and optional YouTube and Twitch connections for your own subscriptions and follows.
+
+## Privacy, in short
+
+Everything stays on the computer where you use it. Your sign-ins live in the app's own browser profile and are never read or copied. The hour, your saved posts and your rooms sit in one JSON file on your machine. No account is needed; each device gets an anonymous guest profile, and a username is optional. There is no telemetry. Details, including what the service stores and what leaves your computer, are in [SECURITY.md](SECURITY.md).
+
+## Limitations
+
+- Some platforms refuse to sign in inside an embedded browser. Google sign-in in the YouTube view in particular may be refused. Browsing signed out works everywhere.
+- Daily Scroll does not block the platforms' own apps or other browsers. The hour only counts what you do inside it.
+- The browser app cannot show the real sites by itself. It needs the Chrome companion or the Windows app for that.
+- The phone app is a thin shell that depends on a service you run yourself. It has had limited testing on real phones, and it is not on any app store ([docs/STORE-READINESS.md](docs/STORE-READINESS.md) says why).
+- Rooms share which post is open. They do not sync playback position or play and pause.
+- Public feeds and previews are not your personal recommendations. Platforms may refuse some embeds.
+- The Windows installer is unsigned, so Windows shows a warning on first run.
+
+## Working on the code
+
+[CONTRIBUTING.md](CONTRIBUTING.md) has the layout and the ground rules. [CLAUDE.md](CLAUDE.md) is the map kept for coding assistants, and it is accurate for people too.
+
+```
 npm ci
-npm start
+npm run service          # testing mode: no hour, for development
+npm run service:limited  # the hour on, as a user gets it
+npm test                 # unit tests
+npm run check            # TypeScript over the phone app
+cd desktop && npm ci && npm start    # the Windows app in development
 ```
 
-Build the Windows installer with `npm run build` from `desktop/` on Windows. The build prepares shared service modules automatically. Installers, downloaded dependencies, and generated runtime files are excluded from Git.
+Testing mode counts elapsed time and never closes a site. The Windows app enforces the hour by default; `npm start -- --testing` in `desktop/` turns testing mode on there.
 
-The desktop app opens official platform websites inside an Electron browsing pane and starts its own local service. Sign-ins stay in its local browser profile. The **All apps** button returns to the picker; **Exit YouTube** (or the selected platform's name) closes the current site. The arrow buttons navigate within the site. Audio is enabled and controlled by the site's player.
+**Releases.** Installers are built by the GitHub Actions workflow in `.github/workflows/` and attached to a release in this repository, with a SHA-256 checksum next to each. [RELEASE-NOTES.md](RELEASE-NOTES.md) describes the current release and what it leaves out.
 
-## Run the phone app
+**Hosting.** The service can run on a small HTTPS host so the phone app works away from home: [docs/HOSTING.md](docs/HOSTING.md). The Windows app never needs that.
 
-Start the service first, then in a second terminal at the repository root:
+**Other docs:** [docs/ANDROID-APK.md](docs/ANDROID-APK.md) (building and signing the phone app), [ACCOUNT-SETUP.md](ACCOUNT-SETUP.md) (the optional provider connections), [docs/DEVELOPMENT-HISTORY.md](docs/DEVELOPMENT-HISTORY.md) (earlier notes; some describe interfaces that have since changed).
 
-```sh
-npm start
-```
+Daily Scroll is independent and is not affiliated with YouTube, Instagram, TikTok, Facebook, Twitch or Snapchat.
 
-Use the Expo development workflow and connect to `http://YOUR_COMPUTER_LAN_IP:8787` from a phone on the same network. `EXPO_PUBLIC_SERVICE_URL` sets the service address for a configured build. Phone browsing uses a separate native WebView; All apps and Android Back return to the picker. Physical-device sign-in, playback, and navigation still require verification.
+## License
 
-## Browser and Chrome companion
-
-The browser picker offers managed browsing through the Chrome companion and a public-video fallback. To use the companion during development, load `chrome-companion/` as an unpacked extension in Chrome, then reload the local service page. Generated extension ZIP files are not committed; the extension source is included.
-
-Public feeds and embeds differ from the platforms' personalized feeds. Sites may refuse embeds or embedded-browser sign-in. Room participants follow the same selected post; playback position and play/pause are not synchronized. The Chrome mirror is experimental and requires a user-selected capture surface.
-
-## Checks
-
-```sh
-npm test
-npm run check
-```
-
-Tests cover the budget/service, platform navigation policies, provider adapters, room behavior, companion lifecycle, and client regressions. Automated tests do not establish that real social-account sign-in works.
-
-## Configuration and private data
-
-`.env.example` lists optional provider settings with blank credentials. Copy it to a private `.env` and run `node --env-file=.env server.mjs` when using configured providers. Add `--testing` if testing mode is wanted. Never put secrets in `EXPO_PUBLIC_*` values.
-
-Do not commit `.env`, service data, encryption keys, account cookies, browser profiles, logs, installers, or local screenshots. No live credentials or user data are required to inspect this source. Production deployment needs HTTPS, persistent private storage, registered provider applications where applicable, and further review.
+[MIT](LICENSE).
