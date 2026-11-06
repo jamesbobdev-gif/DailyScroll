@@ -65,7 +65,7 @@ From the repository root on the branch that contains `fly.toml`:
 fly launch --copy-config --ha=false --no-deploy
 ```
 
-Fly asks for an app name (for example `daily-scroll-james`; it must be unique across
+Fly asks for an app name (for example `daily-scroll-yourname`; it must be unique across
 Fly) and a region (pick the one closest to you). Answer **no** if it offers to add a
 Postgres or Redis database. `--copy-config` keeps the repo's settings, `--ha=false`
 means one machine instead of two, and `--no-deploy` lets you set secrets first.

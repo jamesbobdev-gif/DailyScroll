@@ -1,6 +1,6 @@
-# Daily Scroll desktop 0.3
+# Daily Scroll for Windows
 
-Windows installer: dist/Daily-Scroll-Setup-0.3.0.exe. The unpacked development app is dist/win-unpacked/Daily Scroll.exe. This build is unsigned and has not been published to an app store.
+`npm run build` writes the installer to dist/Daily-Scroll-Setup-VERSION.exe and the unpacked development app to dist/win-unpacked/Daily Scroll.exe. The build is unsigned and has not been published to an app store.
 
 The application hosts a sandboxed Electron WebContentsView inside its own window. The app's sidebar, navigation, Pause button and timer remain outside the browsing pane. Social sites load as top-level documents in that pane, not cross-origin iframes. No Chrome companion, separate Chrome window, or localhost server setup is required. The application starts its own service on an ephemeral loopback port.
 

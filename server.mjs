@@ -241,6 +241,7 @@ export function createService({directory=path.join(ROOT,'data'),clock=Date.now,o
         const png=await QRCode.toBuffer(invite,{type:'png',width:320,margin:3,errorCorrectionLevel:'M'});
         res.writeHead(200,{'Content-Type':'image/png','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(png);return;
       }
+      if(url.pathname==='/api/companion-folder'&&req.method==='GET')return send(200,{path:path.join(ROOT,'chrome-companion')});
       if(url.pathname==='/api/room-invite'&&req.method==='GET'){
         if(!roomFor(u))fail(404,'Join a room first.');
         return send(200,{url:`${inviteOrigin(req)}/?room=${encodeURIComponent(u.room)}`,code:u.room});

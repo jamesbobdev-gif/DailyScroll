@@ -236,7 +236,7 @@ document.addEventListener('daily-chrome-error',event=>notice(event.detail?.messa
 on('open-real-youtube','click',()=>{pause();state.page='chrome';notice('');render();window.scrollTo(0,0);});
 $('chrome-back').addEventListener('click',()=>returnToApps());
 on('chrome-public','click',()=>{state.page='today';render();});
-on('chrome-copy-folder','click',async()=>{await navigator.clipboard.writeText('C:\\Users\\chopin\\Documents\\ChatGPT\\Daily Scroll\\outputs\\daily-scroll\\chrome-companion');notice('Companion folder copied.');});
+on('chrome-copy-folder','click',async()=>{const folder=await api('companion-folder');await navigator.clipboard.writeText(folder.path);notice('Companion folder copied.');});
 on('chrome-open','click',async()=>{
   if(document.documentElement.dataset.dailyChromeVersion!=='0.2.1')throw Error('Connect the updated Chrome companion first.');
   if(!state.chromeActive)await pause();
