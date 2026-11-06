@@ -20,13 +20,13 @@ Help an end user choose a social platform, browse/scroll, pause, and return to t
 - `*.test.mjs`: Node test suite; `client.test.mjs` includes client navigation/playback regressions.
 - `README.md` (what the app is, install, limitations), `CONTRIBUTING.md`, `SECURITY.md` (what is stored where, reporting path), `LICENSE` (MIT), `GITHUB-DESCRIPTION.md` (the About box text and topics), `RELEASE-NOTES.md` (the current release).
 - `docs/`: `HOSTING.md` (Fly.io), `PHONE-INSTALLATION.md`, `ANDROID-APK.md`, `STORE-READINESS.md`, `DEVELOPMENT-HISTORY.md` (older notes), `images/` (README screenshots: from the app in testing mode, no account signed in, nothing personal).
-- `.github/workflows/`: the installer build. `Dockerfile`, `fly.toml`, `docker-entrypoint.sh`: the hosted service.
+- `.github/workflows/release.yml`: a `v*` tag builds the Windows installer and publishes it to the releases repository (`desktop/package.json` -> `build.publish`), plus an unsigned Android APK as a run artifact. `scripts/release.mjs` (`npm run release`) does the Windows part from one computer; `scripts/releases-readme.*` keep that repository's README and release notes. `desktop/main.mjs` updates installed copies from there with electron-updater. `Dockerfile`, `fly.toml`, `docker-entrypoint.sh`: the hosted service.
 
 ## Commands
 
 From repository root: `npm ci`, `npm run service`, `npm test`, `npm run check`.
 For Expo: `npm start` with the service running separately.
-For Windows: `cd desktop`, `npm ci`, `npm start`; `npm run build` builds the installer.
+For Windows: `cd desktop`, `npm ci`, `npm start`; `npm run build` builds the installer. `npm run release` (root) bumps the version everywhere, builds and publishes the installer; `electron`, `electron-builder` and `electron-updater` are pinned to exact versions in `desktop/package.json`.
 Use the committed lockfiles. Do not commit dependencies or build output.
 
 ## Current behavior and recent fixes

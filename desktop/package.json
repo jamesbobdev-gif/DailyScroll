@@ -1,13 +1,58 @@
 {
-  "name":"daily-scroll-desktop",
-  "version":"1.0.0",
-  "private":true,
-  "description":"Daily Scroll with browsing inside the app window",
-  "author":"Daily Scroll",
-  "type":"module",
-  "main":"bootstrap.cjs",
-  "scripts":{"prepare-runtime":"node prepare.mjs","start":"node prepare.mjs && electron .","build":"node prepare.mjs && electron-builder --win nsis --x64"},
-  "dependencies":{"qrcode":"1.5.4"},
-  "devDependencies":{"electron":"latest","electron-builder":"latest"},
-  "build":{"appId":"app.dailyscroll.desktop","productName":"Daily Scroll","directories":{"output":"dist"},"files":["bootstrap.cjs","main.mjs","user-agent.mjs","preload.cjs","shell.html","shell.css","shell.js","runtime/**/*","package.json"],"win":{"target":"nsis","signAndEditExecutable":false},"nsis":{"oneClick":false,"perMachine":false,"allowToChangeInstallationDirectory":true,"createDesktopShortcut":true,"artifactName":"Daily-Scroll-Setup-${version}.${ext}"}}
+  "name": "daily-scroll-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Daily Scroll with browsing inside the app window",
+  "author": "Daily Scroll",
+  "type": "module",
+  "main": "bootstrap.cjs",
+  "scripts": {
+    "prepare-runtime": "node prepare.mjs",
+    "start": "node prepare.mjs && electron .",
+    "build": "node prepare.mjs && electron-builder --win nsis --x64"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.12",
+    "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "electron": "44.9.2",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "app.dailyscroll.desktop",
+    "publish": {
+      "provider": "github",
+      "owner": "jamesbobdev-gif",
+      "repo": "dailyscroll-releases",
+      "releaseType": "release"
+    },
+    "productName": "Daily Scroll",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "bootstrap.cjs",
+      "main.mjs",
+      "user-agent.mjs",
+      "preload.cjs",
+      "shell.html",
+      "shell.css",
+      "shell.js",
+      "runtime/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "../assets/icon.png",
+      "signExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "artifactName": "Daily-Scroll-Setup-${version}.${ext}"
+    }
+  }
 }

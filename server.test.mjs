@@ -3,8 +3,17 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync,readFileSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {createService,lanAddress} from './server.mjs';
+import {createService,lanAddress,DESKTOP_RELEASES} from './server.mjs';
 import {parsePost} from './content.mjs';
+
+test('the Windows app link sends people to the releases page instead of a file on this computer',async()=>{
+  const directory=mkdtempSync(path.join(tmpdir(),'scroll-installer-'));
+  const server=createService({directory,testingMode:true});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  try{
+    const response=await fetch(`http://127.0.0.1:${server.address().port}/desktop-installer`,{redirect:'manual'});
+    assert.equal(response.status,302);assert.equal(response.headers.get('location'),DESKTOP_RELEASES);
+  }finally{await new Promise(r=>server.close(r));rmSync(directory,{recursive:true,force:true});}
+});
 
 test('testing mode opens all six outside the daily hour with an exhausted allowance and preserves normal usage',async()=>{
   const directory=mkdtempSync(path.join(tmpdir(),'scroll-testing-'));

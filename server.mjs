@@ -15,6 +15,8 @@ import {initialYouTubeSources,refreshYouTubeFeed} from './youtube-feed.mjs';
 import {buildCompanionZip} from './companion-zip.mjs';
 
 const ROOT=path.dirname(fileURLToPath(import.meta.url));
+// Where the Windows installer lives: the public releases repository (desktop/package.json -> build.publish).
+export const DESKTOP_RELEASES='https://github.com/jamesbobdev-gif/dailyscroll-releases/releases/latest';
 // Picks the address phones on the same Wi-Fi can reach. Virtual adapters (VirtualBox, VMware, Hyper-V, WSL, Tailscale, Docker) are skipped, then 192.168.x.x wins over 172.16-31.x.x over 10.x.x.x; the VirtualBox host-only default 192.168.56.x is ranked last.
 export function lanAddress(interfaces){
   const virtual=/virtualbox|vbox|vmware|hyper-v|wsl|vethernet|tailscale|docker|loopback|bluetooth|npcap|pseudo/i;
@@ -84,11 +86,7 @@ export function createService({directory=path.join(ROOT,'data'),clock=Date.now,o
       if(url.pathname==='/health')return send(200,{ok:true});
       if(!url.pathname.startsWith('/api/')){
         if(req.method!=='GET')fail(405,'Method not allowed.');
-        if(url.pathname==='/desktop-installer'){
-          const installer=path.join(ROOT,'desktop','dist','Daily-Scroll-Setup-0.3.0.exe');if(!existsSync(installer))fail(404,'The desktop installer is not available here.');
-          res.writeHead(200,{'Content-Type':'application/octet-stream','Content-Length':statSync(installer).size,'Content-Disposition':'attachment; filename="Daily-Scroll-Setup-0.3.0.exe"','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
-          createReadStream(installer).pipe(res);return;
-        }
+        if(url.pathname==='/desktop-installer'){res.writeHead(302,{Location:DESKTOP_RELEASES,'Cache-Control':'no-store'});res.end();return;}
         const files={'/chrome-companion.zip':['chrome-companion.zip','application/zip'],'/mirror.js':['mirror.js','text/javascript; charset=utf-8'],'/youtube-icon.png':['youtube-icon.png','image/png'],'/tiktok-icon.png':['tiktok-icon.png','image/png'],'/':['client.html','text/html; charset=utf-8'],'/client.js':['client.js','text/javascript; charset=utf-8'],'/client.css':['client.css','text/css; charset=utf-8'],'/feed.css':['feed.css','text/css; charset=utf-8'],'/brand.css':['brand.css','text/css; charset=utf-8'],'/brand-icons.js':['brand-icons.js','text/javascript; charset=utf-8']};
         const f=files[url.pathname];if(!f)fail(404,'Not found.');
         let content;

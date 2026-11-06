@@ -1,11 +1,12 @@
 import {app,BrowserWindow,WebContentsView,ipcMain,Menu,session} from 'electron';
 import {browserUserAgent} from './user-agent.mjs';
+import updaterModule from 'electron-updater';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import path from 'node:path';
 import {createService} from './runtime/server.mjs';
 import {platforms,allowedPlatform} from './runtime/chrome-companion/platforms.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url)),shellURL=pathToFileURL(path.join(here,'shell.html')).href;
-let window,view,service,base,cookie='',current=null,budget=null,stamp=0,error='',loading=false,busy=false,quitting=false;
+let window,view,service,base,cookie='',current=null,budget=null,stamp=0,error='',loading=false,busy=false,quitting=false,update=null;
 const zone=Intl.DateTimeFormat().resolvedOptions().timeZone;
 const testingMode=process.argv.includes('--testing')||process.env.SCROLL_TEST_MODE==='1';
 async function call(route,body){
@@ -13,7 +14,7 @@ async function call(route,body){
   const cookies=response.headers.getSetCookie();if(cookies.length)cookie=cookies.map(v=>v.split(';')[0]).join('; ');
   const me=await response.json();if(!response.ok)throw Error(me.error||'Could not connect.');return me;
 }
-function status(){return {platform:current,host:view&&!view.webContents.isDestroyed()?new URL(view.webContents.getURL()||platforms[current].url).hostname:'',loading,error,budget,stamp,now:Date.now()};}
+function status(){return {platform:current,host:view&&!view.webContents.isDestroyed()?new URL(view.webContents.getURL()||platforms[current].url).hostname:'',loading,error,budget,stamp,now:Date.now(),version:app.getVersion(),update};}
 function publish(){if(window&&!window.isDestroyed())window.webContents.send('daily:status',status());}
 function accept(me){budget={testingMode:me.testingMode,elapsed:me.elapsed,remaining:me.remaining,open:me.open,hour:me.hour,now:me.now,allowedUntil:me.allowedUntil};stamp=Date.now();publish();}
 function layout(){if(!view||!window)return;const [width,height]=window.getContentSize();view.setBounds({x:208,y:82,width:Math.max(1,width-208),height:Math.max(1,height-82)});}
@@ -46,9 +47,26 @@ async function open(platform){
   return status();
 }
 function trusted(event){if(event.sender!==window?.webContents||event.senderFrame!==window.webContents.mainFrame||event.senderFrame.url!==shellURL)throw Error('Unsupported caller.');}
+// Installed copies update themselves from the releases repository (package.json -> build.publish): a check a minute
+// after start and every four hours, a quiet download, then Restart to update in the sidebar; left alone, it installs on quit.
+function startUpdates(){
+  if(!app.isPackaged)return;
+  const {autoUpdater}=updaterModule;
+  autoUpdater.autoDownload=true;autoUpdater.autoInstallOnAppQuit=true;autoUpdater.logger=null;
+  autoUpdater.on('update-available',info=>{update={version:info.version,state:'downloading'};publish();});
+  autoUpdater.on('update-downloaded',info=>{update={version:info.version,state:'ready'};publish();});
+  autoUpdater.on('error',()=>{if(update?.state==='downloading')update=null;publish();});
+  const check=()=>autoUpdater.checkForUpdates().catch(()=>{});
+  setTimeout(check,60000);setInterval(check,4*60*60*1000);
+}
+async function installUpdate(){
+  if(update?.state!=='ready'||quitting)return status();
+  quitting=true;await stop();service.close(()=>updaterModule.autoUpdater.quitAndInstall(true,true));return status();
+}
 let queue=Promise.resolve();
 ipcMain.handle('daily:open',(event,platform)=>{trusted(event);const next=queue.then(()=>open(platform));queue=next.catch(()=>{});return next;});
 ipcMain.handle('daily:status',event=>{trusted(event);return status();});
+ipcMain.handle('daily:update',event=>{trusted(event);return installUpdate();});
 ipcMain.handle('daily:navigate',async(event,action)=>{
   trusted(event);if(!['back','forward','reload','home','close'].includes(action))throw Error('Unsupported action.');
   if(action==='close'||action==='home'){await stop();return status();}if(!view)return status();
@@ -68,7 +86,7 @@ await new Promise(resolve=>service.listen(0,'127.0.0.1',resolve));base=`http://1
 accept(await call('guest',{zone}));
 window=new BrowserWindow({title:'DAILY SCROLL',width:1280,height:880,minWidth:800,minHeight:600,backgroundColor:'#fff',show:false,webPreferences:{preload:path.join(here,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true}});
 window.webContents.setWindowOpenHandler(()=>({action:'deny'}));window.webContents.on('will-navigate',event=>event.preventDefault());
-window.on('resize',layout);window.once('ready-to-show',()=>window.show());await window.loadFile(path.join(here,'shell.html'));
+window.on('resize',layout);window.once('ready-to-show',()=>window.show());await window.loadFile(path.join(here,'shell.html'));startUpdates();
 setInterval(async()=>{if(!current||busy||quitting)return;busy=true;try{accept(await call('pulse',{platform:current}));}catch(e){error=e.message;await stop();}finally{busy=false;}},4000);
 setInterval(()=>{if(current&&budget&&Date.now()-stamp>=budget.allowedUntil-budget.now){error='Connection lost. Choose an app to resume.';stop();}},500);
 });
