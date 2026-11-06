@@ -11,9 +11,9 @@ It is not a blocker. Nothing stops you opening Instagram somewhere else. It is a
 
 ## Install
 
-**Windows:** download `Daily-Scroll-Setup-<version>.exe` from the [latest release](https://github.com/jamesbobdev-gif/DailyScroll/releases/latest) and run it. The installer is not code-signed yet, so Windows warns: **More info, then Run anyway**. The Windows app runs its own service, so there is nothing else to set up. The hour is on from the first launch.
+**Windows:** download `Daily-Scroll-Setup-<version>.exe` from the [latest release](https://github.com/jamesbobdev-gif/dailyscroll-releases/releases/latest) and run it. The installer is not code-signed yet, so Windows warns: **More info, then Run anyway**. The Windows app runs its own service, so there is nothing else to set up. The hour is on from the first launch, and installed copies update themselves.
 
-**Android:** the `.apk` is attached to the same release. The phone app needs the Daily Scroll service running on a computer on the same Wi-Fi; [docs/PHONE-INSTALLATION.md](docs/PHONE-INSTALLATION.md) has the steps. The APK is signed with the project's own key and is not on Google Play.
+**Android:** the `.apk` is attached to the same release when there is a phone build for that version. The phone app needs the Daily Scroll service running on a computer on the same Wi-Fi; [docs/PHONE-INSTALLATION.md](docs/PHONE-INSTALLATION.md) has the steps. The APK is signed with the project's own key and is not on Google Play.
 
 **In a browser, from source:** Node 22 or newer, then
 
@@ -67,7 +67,7 @@ cd desktop && npm ci && npm start    # the Windows app in development
 
 Testing mode counts elapsed time and never closes a site. The Windows app enforces the hour by default; `npm start -- --testing` in `desktop/` turns testing mode on there.
 
-**Releases.** Installers are built by the GitHub Actions workflow in `.github/workflows/` and attached to a release in this repository, with a SHA-256 checksum next to each. [RELEASE-NOTES.md](RELEASE-NOTES.md) describes the current release and what it leaves out.
+**Releases.** Installers live in a public repository of their own, [jamesbobdev-gif/dailyscroll-releases](https://github.com/jamesbobdev-gif/dailyscroll-releases), named in `desktop/package.json` under `build.publish`. One version number covers `package.json`, `desktop/package.json` and `app.json`. `npm run release` bumps it, builds the Windows installer on this computer and publishes it there with a SHA-256 checksum; installed copies check that repository every few hours and update themselves (`desktop/main.mjs`). Pushing a `v<version>` tag runs `.github/workflows/release.yml`, which does the same on GitHub's runners (it needs a `RELEASES_TOKEN` repository secret: a classic personal access token with the `repo` scope) and builds an unsigned Android APK for signing on the owner's computer ([docs/ANDROID-APK.md](docs/ANDROID-APK.md)). [RELEASE-NOTES.md](RELEASE-NOTES.md) describes the current release and what it leaves out.
 
 **Hosting.** The service can run on a small HTTPS host so the phone app works away from home: [docs/HOSTING.md](docs/HOSTING.md). The Windows app never needs that.
 
