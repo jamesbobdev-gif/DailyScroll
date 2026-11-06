@@ -2,7 +2,7 @@
   "expo": {
     "name": "The Daily Scroll",
     "slug": "the-daily-scroll",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
