@@ -1,0 +1,123 @@
+# Builds the Windows installer and publishes it to the public releases repository (desktop/package.json ->
+# build.publish) whenever a version tag is pushed, or by hand from the Actions tab. Installed copies then
+# pick the new version up on their own (desktop/main.mjs). `npm run release` does the same from one computer.
+#
+# Needs one repository secret: RELEASES_TOKEN, a classic personal access token with the "repo" scope.
+# (A fine-grained token with Contents: read and write passes the check below but GitHub still refuses
+# release-asset uploads from it with "Resource not accessible by personal access token".)
+#
+# The Windows installer is unsigned until a signing certificate is added, so Windows shows a SmartScreen
+# warning; the job attaches SHA256SUMS-windows.txt to the release so a download can be checked (SECURITY.md).
+#
+# The Android job builds an unsigned APK and attaches it to the run as an artifact, together with apksigner,
+# for signing on the owner's computer with the project's keystore (docs/ANDROID-APK.md). The keystore never
+# leaves that computer, so the signed APK is uploaded to the release by hand.
+#
+# Supply chain: every action below is pinned to a commit SHA (the version is in the trailing comment), and
+# the workflow's own GITHUB_TOKEN can only read this repository.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop/package-lock.json
+      # fail fast, and say why, when the token can't write to the releases repository
+      - name: Check the releases token
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        shell: bash
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo "RELEASES_TOKEN secret is not set"; exit 1; fi
+          repo=$(node -p "const p=require('./desktop/package.json').build.publish; p.owner+'/'+p.repo")
+          perms=$(gh api "repos/$repo" --jq '.permissions' 2>&1) || { echo "RELEASES_TOKEN can't read $repo: $perms"; exit 1; }
+          echo "token permissions on $repo: $perms"
+          echo "$perms" | grep -q '"push":true' || { echo "RELEASES_TOKEN has no write (Contents: read and write) access to $repo"; exit 1; }
+      - run: npm ci
+      - run: npm test
+      - run: npm run check
+      - run: npm ci
+        working-directory: desktop
+      - name: Build and publish
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run build -- --publish always
+      # SHA-256 of the installer, so a download can be checked against the release page
+      - name: Checksums
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        shell: bash
+        run: |
+          cd desktop/dist
+          files=(Daily-Scroll-Setup-*.exe)
+          [ -e "${files[0]}" ] || { echo "no installer in desktop/dist/"; exit 1; }
+          sha256sum "${files[@]}" > SHA256SUMS-windows.txt
+          cat SHA256SUMS-windows.txt
+          repo=$(node -p "const p=require('../package.json').build.publish; p.owner+'/'+p.repo")
+          # the release this run publishes to: the pushed tag, or v<desktop/package.json version> when started by hand
+          if [ "$GITHUB_REF_TYPE" = tag ]; then TAG="$GITHUB_REF_NAME"; else TAG="v$(node -p "require('../package.json').version")"; fi
+          gh release upload --repo "$repo" "$TAG" SHA256SUMS-windows.txt --clobber
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: installer-windows
+          path: |
+            desktop/dist/*.exe
+            desktop/dist/*.yml
+            desktop/dist/*.blockmap
+            desktop/dist/SHA256SUMS-windows.txt
+          if-no-files-found: ignore
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+      - run: npm ci
+      - run: npx expo prebuild --platform android --clean --no-install
+      - name: Disable debug signing for release
+        run: node scripts/android-signing.mjs
+      - name: Build unsigned APK for local signing
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon --max-workers=2
+      - name: Prepare local signing tools
+        run: |
+          apk=android/app/build/outputs/apk/release/app-release-unsigned.apk
+          test -s "$apk"
+          mkdir -p local-signing
+          cp "$apk" local-signing/
+          signer=$(find "$ANDROID_HOME/build-tools" -name apksigner.jar | sort -V | tail -1)
+          test -s "$signer"
+          cp "$signer" local-signing/
+          sha256sum local-signing/* > local-signing/BUILD-SHA256.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: android-for-local-signing
+          path: local-signing/
+          retention-days: 7

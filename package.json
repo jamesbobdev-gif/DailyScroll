@@ -12,7 +12,8 @@
     "service": "node server.mjs --testing",
     "service:limited": "node server.mjs",
     "tunnel": "cloudflared tunnel --url http://localhost:8787 --no-autoupdate",
-    "deploy": "fly deploy --ha=false"
+    "deploy": "fly deploy --ha=false",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
